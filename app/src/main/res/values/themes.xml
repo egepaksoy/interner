@@ -1,0 +1,4 @@
+<resources>
+    <color name="launcher_background">#0B57A4</color>
+    <style name="Theme.Interner" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
