@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.TR
 import com.egepaksoy.interner.data.dayNumbers
-import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.data.fullDate
 import java.time.LocalDate
 import java.time.YearMonth
@@ -69,9 +68,8 @@ private val columns = listOf(
     Column("Başlık", 180.dp) { e, _ -> e.title },
     Column("Yapılan işler", 260.dp) { e, _ -> e.work },
     Column("Alan", 140.dp) { e, _ -> e.area },
-    Column("Uçak", 110.dp) { e, _ -> listOf(e.aircraft, e.registration).filter { it.isNotBlank() }.joinToString("\n") },
+    Column("Uçak", 70.dp) { e, _ -> e.aircraft },
     Column("ATA", 56.dp) { e, _ -> e.ata.substringBefore(" -") },
-    Column("Saat", 56.dp) { e, _ -> if (e.hours > 0) formatHours(e.hours) else "" },
 )
 
 /** Kayıtları eskiden yeniye, yatay kaydırılabilen bir tabloda gösterir. */
@@ -105,9 +103,8 @@ fun LogTable(entries: List<LogEntry>, pad: PaddingValues, onOpen: (Long) -> Unit
                 }
                 item(key = "total") {
                     val days = numbers.size
-                    val hours = formatHours(entries.sumOf { it.hours })
                     Text(
-                        "Toplam: $days gün, $hours saat",
+                        "Toplam: $days gün, ${rows.size} kayıt",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
                         style = MaterialTheme.typography.labelLarge,
                     )
@@ -180,8 +177,7 @@ fun LogCalendar(
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            "${monthEntries.map { it.date }.distinct().size} gün · " +
-                                "${formatHours(monthEntries.sumOf { it.hours })} saat",
+                            "${monthEntries.map { it.date }.distinct().size} gün kayıtlı",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -212,7 +208,7 @@ fun LogCalendar(
                                 if (day != null) {
                                     DayCell(
                                         day = day,
-                                        hours = byDate[day]?.sumOf { it.hours },
+                                        count = byDate[day]?.size ?: 0,
                                         selected = day == selected,
                                         today = day == today,
                                         onClick = { selected = day },
@@ -248,9 +244,9 @@ fun LogCalendar(
 }
 
 @Composable
-private fun DayCell(day: Long, hours: Double?, selected: Boolean, today: Boolean, onClick: () -> Unit) {
+private fun DayCell(day: Long, count: Int, selected: Boolean, today: Boolean, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val hasEntry = hours != null
+    val hasEntry = count > 0
     val background = when {
         selected -> scheme.primary
         hasEntry -> scheme.primaryContainer
@@ -281,8 +277,8 @@ private fun DayCell(day: Long, hours: Double?, selected: Boolean, today: Boolean
             fontWeight = if (hasEntry || today) FontWeight.Bold else null,
             color = content,
         )
-        if (hours != null && hours > 0) {
-            Text("${formatHours(hours)} sa", style = MaterialTheme.typography.labelSmall, color = content)
+        if (count > 1) {
+            Text("$count kayıt", style = MaterialTheme.typography.labelSmall, color = content)
         }
     }
 }

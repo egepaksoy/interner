@@ -8,9 +8,7 @@ import com.egepaksoy.interner.data.Note
 import com.egepaksoy.interner.data.computeStats
 import com.egepaksoy.interner.data.dayNumbers
 import com.egepaksoy.interner.data.diaryText
-import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.ui.matches
-import com.egepaksoy.interner.ui.parseHours
 import com.egepaksoy.interner.ui.weekdaysBetween
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +30,6 @@ class LogicTest {
     fun statsCountDistinctDaysAndGroupCaseInsensitively() {
         val s = computeStats(entries)
         assertEquals(2, s.days)
-        assertEquals(15.5, s.totalHours, 0.0)
         assertEquals(listOf("Hat Bakım" to 2, "Hangar / Üs Bakım" to 1), s.byArea)
         assertEquals(listOf("A320" to 2), s.byAircraft)
         assertEquals(mapOf(d1 to 1, d1 + 1 to 2), dayNumbers(entries))
@@ -57,19 +54,9 @@ class LogicTest {
     @Test
     fun diaryIsChronologicalWithDayNumbers() {
         val text = diaryText(Internship(company = "THY Teknik"), entries)
-        assertTrue(text.startsWith("STAJ DEFTERİ\nTHY Teknik\nToplam 2 gün, 15,5 saat"))
+        assertTrue(text.startsWith("STAJ DEFTERİ\nTHY Teknik\nToplam 2 gün\n"))
         assertTrue(text.indexOf("1. Gün — 9 Kasım 2026, Pazartesi") < text.indexOf("2. Gün — 10 Kasım 2026, Salı"))
         assertTrue(text.indexOf("Tekerlek değişimi") < text.indexOf("Öğleden sonra"))
-    }
-
-    @Test
-    fun hoursParsingAndFormatting() {
-        assertEquals(7.5, parseHours("7,5")!!, 0.0)
-        assertEquals(0.0, parseHours("  ")!!, 0.0)
-        assertNull(parseHours("25"))
-        assertNull(parseHours("abc"))
-        assertEquals("8", formatHours(8.0))
-        assertEquals("7,5", formatHours(7.5))
     }
 
     @Test
@@ -102,7 +89,8 @@ class LogicTest {
         assertTrue(sheet.contains("A &amp; B &lt;test&gt; </t>"))
         // 9 Kasım 2026 = Excel 46335
         assertTrue(sheet.contains("<c r=\"B2\" s=\"3\"><v>46335</v></c>"))
-        assertTrue(sheet.contains("<c r=\"L4\" s=\"4\"><v>7.5</v></c>"))
+        assertTrue(sheet.contains("<c r=\"H4\" t=\"inlineStr\" s=\"2\"><is><t xml:space=\"preserve\">a320</t></is></c>"))
+        assertFalse(sheet.contains("Tescil") || sheet.contains("Süre"))
     }
 
     @Test

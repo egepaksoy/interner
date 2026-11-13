@@ -27,7 +27,15 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
 
     fun save(entry: LogEntry, done: () -> Unit = {}) = viewModelScope.launch {
         val now = System.currentTimeMillis()
-        dao.upsert(entry.copy(createdAt = entry.createdAt.takeIf { it > 0 } ?: now, updatedAt = now))
+        // Arayüzden kaldırılan alanlar (tescil, referans, süre, sorumlu) eski kayıtta korunur.
+        val old = if (entry.id != 0L) dao.entry(entry.id) else null
+        val merged = if (old == null) entry else entry.copy(
+            registration = old.registration,
+            reference = old.reference,
+            hours = old.hours,
+            supervisor = old.supervisor,
+        )
+        dao.upsert(merged.copy(createdAt = entry.createdAt.takeIf { it > 0 } ?: now, updatedAt = now))
         done()
     }
 

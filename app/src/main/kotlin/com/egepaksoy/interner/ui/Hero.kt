@@ -36,7 +36,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.egepaksoy.interner.R
 import com.egepaksoy.interner.data.Internship
-import com.egepaksoy.interner.data.formatHours
 
 private val Amber = Color(0xFFFFC069)
 
@@ -45,7 +44,6 @@ private val Amber = Color(0xFFFFC069)
 fun InternshipHero(
     internship: Internship?,
     days: Int,
-    hours: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,13 +100,10 @@ fun InternshipHero(
                     color = soft,
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HeroChip("${formatHours(hours)} saat")
-                if (target > 0) {
-                    val left = (target - days).coerceAtLeast(0)
-                    HeroChip(if (left == 0) "Hedef tamamlandı" else "$left gün kaldı")
-                }
+            if (target > 0) {
+                val left = (target - days).coerceAtLeast(0)
+                Spacer(Modifier.height(10.dp))
+                HeroChip(if (left == 0) "Hedef tamamlandı" else "$left gün kaldı")
             }
         }
         Spacer(Modifier.width(16.dp))

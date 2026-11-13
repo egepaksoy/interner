@@ -69,7 +69,7 @@ class WidgetTest {
         assertEquals("Örnek Havacılık Teknik", view.text(R.id.progress_company))
         assertEquals("3", view.text(R.id.progress_days))
         assertEquals("/ 30 gün", view.text(R.id.progress_target))
-        assertEquals("21,5 saat · 27 gün kaldı", view.text(R.id.progress_detail))
+        assertEquals("27 gün kaldı", view.text(R.id.progress_detail))
         val bar = view.findViewById<ProgressBar>(R.id.progress_bar)
         assertEquals(30 to 3, bar.max to bar.progress)
 
@@ -82,7 +82,7 @@ class WidgetTest {
     fun todayWidget() {
         val view = show(TodayWidget().render(context, data), 260, 80, "bugun")
         assertEquals("13 Kasım, Cuma", view.text(R.id.today_date))
-        assertEquals("Bugün yazıldı · 7,5 sa", view.text(R.id.today_status))
+        assertEquals("Bugün yazıldı", view.text(R.id.today_status))
         val none = show(TodayWidget().render(context, empty), 260, 80, "bugun-bos")
         assertEquals("Bugün henüz yazılmadı", none.text(R.id.today_status))
         assertEquals("+ Yaz", none.text(R.id.today_add))
@@ -93,7 +93,7 @@ class WidgetTest {
         val view = show(LastEntryWidget().render(context, data), 350, 170, "son-kayit")
         assertEquals("3. gün · 13 Kas", view.text(R.id.last_date))
         assertEquals("Ana iniş takımı tekerlek değişimi", view.text(R.id.last_title))
-        assertEquals("Hat Bakım · A320 · 7,5 sa", view.text(R.id.last_meta))
+        assertEquals("Hat Bakım · A320", view.text(R.id.last_meta))
         assertEquals("Henüz kayıt yok", show(LastEntryWidget().render(context, empty), 350, 170, "son-kayit-bos").text(R.id.last_title))
     }
 

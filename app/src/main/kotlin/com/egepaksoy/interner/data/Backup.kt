@@ -12,16 +12,12 @@ private val fullFmt = DateTimeFormatter.ofPattern("d MMMM yyyy, EEEE", TR)
 
 fun fullDate(epochDay: Long): String = LocalDate.ofEpochDay(epochDay).format(fullFmt)
 
-fun formatHours(h: Double): String =
-    if (h % 1.0 == 0.0) h.toLong().toString() else String.format(TR, "%.1f", h)
-
 /** Kayıt olan her tarihe kronolojik sıra numarası verir (1. gün, 2. gün...). */
 fun dayNumbers(entries: List<LogEntry>): Map<Long, Int> =
     entries.map { it.date }.distinct().sorted().withIndex().associate { (i, d) -> d to i + 1 }
 
 data class Stats(
     val days: Int,
-    val totalHours: Double,
     val byArea: List<Pair<String, Int>>,
     val byAircraft: List<Pair<String, Int>>,
     val byAta: List<Pair<String, Int>>,
@@ -37,7 +33,6 @@ fun computeStats(entries: List<LogEntry>): Stats {
         .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first })
     return Stats(
         days = entries.map { it.date }.distinct().size,
-        totalHours = entries.sumOf { it.hours },
         byArea = count { it.area },
         byAircraft = count { it.aircraft.uppercase(TR) },
         byAta = count { it.ata },
@@ -52,19 +47,15 @@ fun diaryText(internship: Internship?, entries: List<LogEntry>): String = buildS
         if (it.department.isNotBlank()) appendLine(it.department)
     }
     val stats = computeStats(entries)
-    appendLine("Toplam ${stats.days} gün, ${formatHours(stats.totalHours)} saat")
+    appendLine("Toplam ${stats.days} gün")
     val numbers = dayNumbers(entries)
     for (e in entries.sortedWith(compareBy({ it.date }, { it.id }))) {
         appendLine()
         appendLine("${numbers[e.date]}. Gün — ${fullDate(e.date)}")
         if (e.title.isNotBlank()) appendLine(e.title)
         if (e.area.isNotBlank()) appendLine("Çalışma alanı: ${e.area}")
-        val aircraft = listOf(e.aircraft, e.registration).filter { it.isNotBlank() }.joinToString(" / ")
-        if (aircraft.isNotBlank()) appendLine("Uçak: $aircraft")
+        if (e.aircraft.isNotBlank()) appendLine("Uçak tipi: ${e.aircraft}")
         if (e.ata.isNotBlank()) appendLine("ATA: ${e.ata}")
-        if (e.reference.isNotBlank()) appendLine("Referans: ${e.reference}")
-        if (e.hours > 0) appendLine("Süre: ${formatHours(e.hours)} saat")
-        if (e.supervisor.isNotBlank()) appendLine("Sorumlu: ${e.supervisor}")
         if (e.work.isNotBlank()) {
             appendLine("Yapılan işler:")
             appendLine(e.work.trim())

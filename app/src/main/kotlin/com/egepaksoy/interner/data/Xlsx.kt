@@ -150,17 +150,16 @@ fun writeDiaryXlsx(out: OutputStream, entries: List<LogEntry>, notes: List<Note>
     val numbers = dayNumbers(entries)
     val log = Xlsx.Sheet(
         name = "Günlük",
-        widths = listOf(7, 12, 12, 30, 50, 40, 20, 12, 12, 24, 22, 8, 22),
+        widths = listOf(7, 12, 12, 30, 50, 40, 20, 12, 24),
         header = listOf(
             "Gün", "Tarih", "Haftanın günü", "Başlık", "Yapılan işler", "Öğrendiklerim / notlar",
-            "Çalışma alanı", "Uçak tipi", "Tescil", "ATA bölümü", "Referans doküman", "Süre (saat)",
-            "Sorumlu teknisyen",
+            "Çalışma alanı", "Uçak tipi", "ATA bölümü",
         ),
         rows = entries.sortedWith(compareBy({ it.date }, { it.id })).map { e ->
             val date = LocalDate.ofEpochDay(e.date)
             listOf(
                 numbers[e.date], date, date.format(weekdayFmt), e.title, e.work, e.learned, e.area,
-                e.aircraft, e.registration, e.ata, e.reference, e.hours.takeIf { it > 0 }, e.supervisor,
+                e.aircraft, e.ata,
             )
         },
     )

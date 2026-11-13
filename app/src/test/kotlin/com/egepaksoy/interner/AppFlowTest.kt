@@ -88,27 +88,30 @@ class AppFlowTest {
         rule.onNodeWithText("Yapılan işler")
             .performTextInput("Uçak krikoya alındı, 3 numaralı tekerlek söküldü ve yenisi takıldı.")
         rule.onNodeWithText("Hat Bakım").performScrollTo().performClick()
-        rule.onNodeWithText("Uçak tipi").performScrollTo().performTextInput("A320")
+        rule.onNodeWithText("A320").performScrollTo().performClick()
         rule.onNodeWithContentDescription("ATA bölümü listesi").performScrollTo().performClick()
         rule.onNodeWithText("32 - İniş Takımları").performScrollTo().performClick()
-        rule.onNodeWithText("Süre (saat)").performScrollTo().performTextInput("7,5")
         shot("2-kayit-formu")
         rule.onNodeWithText("Kaydet").performClick()
 
-        waitForText("7,5 sa")
-        rule.onNodeWithText("1. gün", substring = true).assertIsDisplayed()
+        waitForText("1. gün")
+        rule.onNodeWithText("Ana iniş takımı tekerlek değişimi").assertIsDisplayed()
         val saved = runBlocking { dao.allEntries() }.single()
         assertEquals(LocalDate.now().toEpochDay(), saved.date)
         assertEquals("32 - İniş Takımları", saved.ata)
-        assertEquals(7.5, saved.hours, 0.0)
+        assertEquals("A320", saved.aircraft)
 
         // Kaydı düzenle
+        // Eski sürümden kalan gizli alanlar düzenlemede silinmemeli.
+        runBlocking { dao.upsert(saved.copy(registration = "TC-ABC", hours = 7.5, supervisor = "Usta")) }
         rule.onNodeWithText("Ana iniş takımı tekerlek değişimi").performClick()
         waitForText("Kaydı düzenle")
-        rule.onNodeWithText("Tescil").performScrollTo().performTextInput("TC-ABC")
+        rule.onNodeWithText("A321").performScrollTo().performClick()
         rule.onNodeWithText("Kaydet").performClick()
-        waitForText("A320 · TC-ABC")
-        assertEquals(1, runBlocking { dao.allEntries() }.size)
+        waitForText("1. gün")
+        val edited = runBlocking { dao.allEntries() }.single()
+        assertEquals("A321", edited.aircraft)
+        assertEquals(Triple("TC-ABC", 7.5, "Usta"), Triple(edited.registration, edited.hours, edited.supervisor))
 
         // Liste görünümü için birkaç eski kayıt
         val today = LocalDate.now().toEpochDay()
@@ -126,7 +129,7 @@ class AppFlowTest {
 
         // Tablo ve takvim görünümleri
         rule.onNodeWithText("Tablo").performClick()
-        waitForText("Toplam: 4 gün, 29,5 saat")
+        waitForText("Toplam: 4 gün, 4 kayıt")
         rule.onNodeWithText("Yapılan işler").assertIsDisplayed()
         shot("6-tablo")
         rule.onNodeWithText("Takvim").performClick()
@@ -174,7 +177,7 @@ class AppFlowTest {
         rule.onNodeWithText("Özet").performClick()
         waitForText("Kayıtlı gün")
         rule.onNodeWithText("25 gün kaldı", substring = true).assertIsDisplayed()
-        rule.onNodeWithText("29,5").assertIsDisplayed()
+        rule.onNodeWithText("Toplam kayıt").assertIsDisplayed()
         shot("5-ozet")
     }
 }

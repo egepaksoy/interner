@@ -17,7 +17,6 @@ import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.TR
 import com.egepaksoy.interner.data.computeStats
 import com.egepaksoy.interner.data.dayNumbers
-import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.ui.entryRoute
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,13 +83,12 @@ abstract class BaseWidget : AppWidgetProvider() {
     }
 }
 
-/** Gün sayacı, hedefe göre ilerleme çubuğu ve toplam saat. */
+/** Gün sayacı ve hedefe göre ilerleme çubuğu. */
 class ProgressWidget : BaseWidget() {
     override fun render(context: Context, data: WidgetData) =
         RemoteViews(context.packageName, R.layout.widget_progress).apply {
             val stats = computeStats(data.entries)
             val target = data.internship?.targetDays ?: 0
-            val hours = "${formatHours(stats.totalHours)} saat"
             setTextViewText(R.id.progress_company, data.internship?.company?.ifBlank { null } ?: "Staj Defteri")
             setTextViewText(R.id.progress_days, stats.days.toString())
             if (target > 0) {
@@ -100,12 +98,12 @@ class ProgressWidget : BaseWidget() {
                 setProgressBar(R.id.progress_bar, target, stats.days.coerceAtMost(target), false)
                 setTextViewText(
                     R.id.progress_detail,
-                    if (left == 0) "$hours · hedef tamamlandı" else "$hours · $left gün kaldı",
+                    if (left == 0) "Hedef tamamlandı" else "$left gün kaldı",
                 )
             } else {
                 setTextViewText(R.id.progress_target, "gün")
                 setViewVisibility(R.id.progress_bar, View.GONE)
-                setTextViewText(R.id.progress_detail, hours)
+                setTextViewText(R.id.progress_detail, "${data.entries.size} kayıt")
             }
             setOnClickPendingIntent(R.id.widget_root, Widgets.openApp(context))
         }
@@ -119,10 +117,8 @@ class TodayWidget : BaseWidget() {
             setTextViewText(R.id.today_date, LocalDate.ofEpochDay(data.today).format(dayMonthFmt))
             val status = when {
                 todays.isEmpty() -> "Bugün henüz yazılmadı"
-                else -> {
-                    val hours = todays.sumOf { it.hours }
-                    "Bugün yazıldı" + if (hours > 0) " · ${formatHours(hours)} sa" else ""
-                }
+                todays.size == 1 -> "Bugün yazıldı"
+                else -> "Bugün yazıldı · ${todays.size} kayıt"
             }
             setTextViewText(R.id.today_status, status)
             setTextViewText(R.id.today_add, if (todays.isEmpty()) "+ Yaz" else "+ Ekle")
@@ -156,7 +152,6 @@ class LastEntryWidget : BaseWidget() {
             val meta = listOf(
                 entry.area,
                 entry.aircraft,
-                if (entry.hours > 0) "${formatHours(entry.hours)} sa" else "",
             ).filter { it.isNotBlank() }.joinToString(" · ")
             setTextViewText(R.id.last_meta, meta)
             setOnClickPendingIntent(R.id.widget_root, Widgets.openApp(context, entryRoute(entry.id)))

@@ -65,7 +65,7 @@
         android:layout_marginTop="8dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:text="90 saat · 18 gün kaldı"
+        android:text="18 gün kaldı"
         android:textColor="#C7FFFFFF"
         android:textSize="12sp" />
 </LinearLayout>

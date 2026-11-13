@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,21 +41,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.egepaksoy.interner.data.AIRCRAFT_TYPES
 import com.egepaksoy.interner.data.ATA_CHAPTERS
 import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.WORK_AREAS
-import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.data.fullDate
 import com.egepaksoy.interner.ui.theme.areaColor
-
-/** Boş metin 0 saat sayılır; geçersiz ya da 0–24 dışı değer `null` döner. */
-fun parseHours(text: String): Double? {
-    val t = text.trim().replace(',', '.')
-    if (t.isEmpty()) return 0.0
-    return t.toDoubleOrNull()?.takeIf { it in 0.0..24.0 }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -70,11 +61,7 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
     var learned by rememberSaveable { mutableStateOf("") }
     var area by rememberSaveable { mutableStateOf("") }
     var aircraft by rememberSaveable { mutableStateOf("") }
-    var registration by rememberSaveable { mutableStateOf("") }
     var ata by rememberSaveable { mutableStateOf("") }
-    var reference by rememberSaveable { mutableStateOf("") }
-    var hours by rememberSaveable { mutableStateOf("") }
-    var supervisor by rememberSaveable { mutableStateOf("") }
 
     var showErrors by rememberSaveable { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
@@ -91,27 +78,22 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                 learned = it.learned
                 area = it.area
                 aircraft = it.aircraft
-                registration = it.registration
                 ata = it.ata
-                reference = it.reference
-                hours = if (it.hours > 0) formatHours(it.hours) else ""
-                supervisor = it.supervisor
             }
         } else {
             // Yeni kayıtta genelde değişmeyen alanları son kayıttan al.
             vm.latestEntry()?.let {
                 area = it.area
-                supervisor = it.supervisor
+                aircraft = it.aircraft
             }
         }
         ready = true
     }
 
-    val hoursValue = parseHours(hours)
     val emptyError = title.isBlank() && work.isBlank()
 
     fun save() {
-        if (emptyError || hoursValue == null) {
+        if (emptyError) {
             showErrors = true
             return
         }
@@ -123,12 +105,8 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                 work = work.trim(),
                 learned = learned.trim(),
                 area = area,
-                aircraft = aircraft.trim(),
-                registration = registration.trim(),
+                aircraft = aircraft,
                 ata = ata.trim(),
-                reference = reference.trim(),
-                hours = hoursValue,
-                supervisor = supervisor.trim(),
                 createdAt = createdAt,
             ),
             onBack,
@@ -231,60 +209,21 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                 }
             }
 
-            SectionTitle("Uçak ve görev", Modifier.padding(top = 4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val caps = KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
-                OutlinedTextField(
-                    value = aircraft,
-                    onValueChange = { aircraft = it; dirty = true },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Uçak tipi") },
-                    placeholder = { Text("A320") },
-                    singleLine = true,
-                    keyboardOptions = caps,
-                )
-                OutlinedTextField(
-                    value = registration,
-                    onValueChange = { registration = it; dirty = true },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Tescil") },
-                    placeholder = { Text("TC-ABC") },
-                    singleLine = true,
-                    keyboardOptions = caps,
-                )
+            SectionTitle("Uçak tipi", Modifier.padding(top = 4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Eski sürümde elle yazılmış, listede olmayan tip de seçili görünsün.
+                val options =
+                    if (aircraft.isBlank() || aircraft in AIRCRAFT_TYPES) AIRCRAFT_TYPES else AIRCRAFT_TYPES + aircraft
+                options.forEach { option ->
+                    FilterChip(
+                        selected = aircraft == option,
+                        onClick = { aircraft = if (aircraft == option) "" else option; dirty = true },
+                        label = { Text(option) },
+                    )
+                }
             }
+
             AtaField(ata) { ata = it; dirty = true }
-            OutlinedTextField(
-                value = reference,
-                onValueChange = { reference = it; dirty = true },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Referans doküman") },
-                placeholder = { Text("AMM task, iş kartı no...") },
-                singleLine = true,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = hours,
-                    onValueChange = { hours = it; dirty = true },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("Süre (saat)") },
-                    placeholder = { Text("8") },
-                    isError = showErrors && hoursValue == null,
-                    supportingText = if (showErrors && hoursValue == null) {
-                        { Text("0–24 arası bir sayı gir") }
-                    } else null,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                )
-                OutlinedTextField(
-                    value = supervisor,
-                    onValueChange = { supervisor = it; dirty = true },
-                    modifier = Modifier.weight(2f),
-                    label = { Text("Sorumlu teknisyen") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                )
-            }
         }
     }
 

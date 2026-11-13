@@ -48,7 +48,6 @@ import com.egepaksoy.interner.data.Xlsx
 import com.egepaksoy.interner.data.writeDiaryXlsx
 import com.egepaksoy.interner.data.computeStats
 import com.egepaksoy.interner.data.diaryText
-import com.egepaksoy.interner.data.formatHours
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -103,16 +102,12 @@ fun SummaryScreen(
             .padding(listPadding(pad)),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        InternshipHero(internship, stats.days, stats.totalHours, onInternship)
+        InternshipHero(internship, stats.days, onInternship)
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatTile("Kayıtlı gün", stats.days.toString(), Modifier.weight(1f))
-            StatTile("Toplam saat", formatHours(stats.totalHours), Modifier.weight(1f))
-            StatTile(
-                "Günlük ort.",
-                if (stats.days > 0) formatHours(stats.totalHours / stats.days) + " sa" else "–",
-                Modifier.weight(1f),
-            )
+            StatTile("Toplam kayıt", entries.size.toString(), Modifier.weight(1f))
+            StatTile("Uçak tipi", stats.byAircraft.size.toString(), Modifier.weight(1f))
         }
 
         Breakdown("Çalışma alanları", stats.byArea) { areaColor(it) }

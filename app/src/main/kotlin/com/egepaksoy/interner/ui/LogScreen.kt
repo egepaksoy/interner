@@ -42,7 +42,6 @@ import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.TR
 import com.egepaksoy.interner.data.computeStats
 import com.egepaksoy.interner.data.dayNumbers
-import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.ui.theme.areaColor
 import java.time.LocalDate
 import java.time.YearMonth
@@ -107,7 +106,7 @@ private fun LogList(
             .filter {
                 matches(
                     query, it.title, it.work, it.learned, it.area, it.aircraft,
-                    it.registration, it.ata, it.reference, it.supervisor,
+                    it.ata,
                 )
             }
             .groupBy { YearMonth.from(LocalDate.ofEpochDay(it.date)) }
@@ -118,7 +117,7 @@ private fun LogList(
         contentPadding = listPadding(pad),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item(key = "progress") { InternshipHero(internship, stats.days, stats.totalHours, onInternship) }
+        item(key = "progress") { InternshipHero(internship, stats.days, onInternship) }
         if (entries.isEmpty()) {
             item(key = "empty") {
                 EmptyState(
@@ -228,12 +227,8 @@ internal fun EntryCard(entry: LogEntry, dayNumber: Int, onClick: () -> Unit) {
                         MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                     if (entry.area.isNotBlank()) Pill(entry.area, accent.copy(alpha = 0.14f), accent)
-                    val aircraft = listOf(entry.aircraft, entry.registration)
-                        .filter { it.isNotBlank() }
-                        .joinToString(" · ")
-                    if (aircraft.isNotBlank()) Pill(aircraft)
+                    if (entry.aircraft.isNotBlank()) Pill(entry.aircraft)
                     if (entry.ata.isNotBlank()) Pill("ATA ${entry.ata.substringBefore(" -")}")
-                    if (entry.hours > 0) Pill("${formatHours(entry.hours)} sa")
                 }
             }
         }

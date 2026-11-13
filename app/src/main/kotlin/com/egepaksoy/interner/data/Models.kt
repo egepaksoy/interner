@@ -3,7 +3,11 @@ package com.egepaksoy.interner.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/** Tarihler `LocalDate.toEpochDay()` olarak saklanır. */
+/**
+ * Tarihler `LocalDate.toEpochDay()` olarak saklanır.
+ * `registration`, `reference`, `hours` ve `supervisor` artık arayüzde yok; eski kayıtlardaki
+ * değerler ve yedeklerle uyum bozulmasın diye veritabanında tutuluyor.
+ */
 @Entity(tableName = "entries")
 data class LogEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -50,6 +54,8 @@ val WORK_AREAS = listOf(
     "Takımhane",
     "Eğitim",
 )
+
+val AIRCRAFT_TYPES = listOf("A320", "A321", "B737")
 
 val ATA_CHAPTERS = listOf(
     "05 - Periyodik Kontroller",

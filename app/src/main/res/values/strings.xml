@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Staj Defteri</string>
     <string name="widget_progress_label">Staj ilerlemesi</string>
-    <string name="widget_progress_description">Tamamlanan gün, hedef ve toplam saat</string>
+    <string name="widget_progress_description">Tamamlanan gün ve hedefe göre ilerleme</string>
     <string name="widget_today_label">Bugün</string>
     <string name="widget_today_description">Bugünü yazdın mı? Tek dokunuşla kayıt ekle</string>
     <string name="widget_last_label">Son kayıt</string>
