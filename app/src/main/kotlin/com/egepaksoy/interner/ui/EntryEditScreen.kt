@@ -58,11 +58,11 @@ fun parseHours(text: String): Double? {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun EntryEditScreen(vm: AppViewModel, id: Long, onBack: () -> Unit) {
+fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -> Unit) {
     var ready by rememberSaveable { mutableStateOf(false) }
     var dirty by rememberSaveable { mutableStateOf(false) }
     var createdAt by rememberSaveable { mutableLongStateOf(0L) }
-    var date by rememberSaveable { mutableLongStateOf(today()) }
+    var date by rememberSaveable { mutableLongStateOf(initialDate ?: today()) }
     var title by rememberSaveable { mutableStateOf("") }
     var work by rememberSaveable { mutableStateOf("") }
     var learned by rememberSaveable { mutableStateOf("") }

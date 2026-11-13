@@ -39,12 +39,17 @@ fun AppNav() {
             HomeScreen(
                 vm = vm,
                 onEntry = { nav.navigate("entry/$it") },
+                onNewEntry = { date -> nav.navigate("entry/0?date=$date") },
                 onNote = { nav.navigate("note/$it") },
                 onInternship = { nav.navigate("internship") },
             )
         }
-        composable("entry/{id}", arguments = idArg) {
-            EntryEditScreen(vm, it.arguments?.getLong("id") ?: 0, back)
+        composable(
+            "entry/{id}?date={date}",
+            arguments = idArg + navArgument("date") { type = NavType.LongType; defaultValue = NO_DATE },
+        ) {
+            val date = it.arguments?.getLong("date")?.takeIf { d -> d != NO_DATE }
+            EntryEditScreen(vm, it.arguments?.getLong("id") ?: 0, date, back)
         }
         composable("note/{id}", arguments = idArg) {
             NoteEditScreen(vm, it.arguments?.getLong("id") ?: 0, back)
@@ -54,6 +59,9 @@ fun AppNav() {
         }
     }
 }
+
+/** Yeni kayıt için tarih verilmediğini (bugün kullanılacağını) belirtir. */
+private const val NO_DATE = Long.MIN_VALUE
 
 private val tabs = listOf(
     Triple("Günlük", "Staj Günlüğü", Icons.Default.DateRange),
@@ -66,6 +74,7 @@ private val tabs = listOf(
 private fun HomeScreen(
     vm: AppViewModel,
     onEntry: (Long) -> Unit,
+    onNewEntry: (Long) -> Unit,
     onNote: (Long) -> Unit,
     onInternship: () -> Unit,
 ) {
@@ -106,7 +115,7 @@ private fun HomeScreen(
         val e = entries
         val n = notes
         when (tab) {
-            0 -> if (e != null) LogScreen(e, internship, pad, onEntry, onInternship)
+            0 -> if (e != null) LogScreen(e, internship, pad, onEntry, onNewEntry, onInternship)
             1 -> if (n != null) NotesScreen(n, pad, onNote, vm::setPinned)
             else -> if (e != null) SummaryScreen(vm, e, internship, pad, onInternship)
         }

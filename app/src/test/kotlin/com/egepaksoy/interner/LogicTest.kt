@@ -81,6 +81,31 @@ class LogicTest {
     }
 
     @Test
+    fun xlsxExportIsAValidWorkbook() {
+        val file = java.io.File("build/test-export.xlsx").apply { parentFile.mkdirs() }
+        val tricky = entries + LogEntry(id = 9, date = d1 + 2, title = "A & B <test> \u0001", work = "satır1\nsatır2")
+        file.outputStream().use {
+            com.egepaksoy.interner.data.writeDiaryXlsx(it, tricky, listOf(Note(title = "Tork", content = "değer")))
+        }
+        val parts = java.util.zip.ZipFile(file).use { zip ->
+            zip.entries().asSequence().associate { it.name to zip.getInputStream(it).readBytes().decodeToString() }
+        }
+        assertEquals(
+            setOf("[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/_rels/workbook.xml.rels",
+                "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml"),
+            parts.keys,
+        )
+        // Her parça geçerli XML olmalı.
+        val builder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        parts.values.forEach { builder.parse(it.byteInputStream()) }
+        val sheet = parts.getValue("xl/worksheets/sheet1.xml")
+        assertTrue(sheet.contains("A &amp; B &lt;test&gt; </t>"))
+        // 9 Kasım 2026 = Excel 46335
+        assertTrue(sheet.contains("<c r=\"B2\" s=\"3\"><v>46335</v></c>"))
+        assertTrue(sheet.contains("<c r=\"L4\" s=\"4\"><v>7.5</v></c>"))
+    }
+
+    @Test
     fun weekdayCountSkipsWeekends() {
         assertEquals(5, weekdaysBetween(d1, d1 + 6))
         assertEquals(1, weekdaysBetween(d1, d1))

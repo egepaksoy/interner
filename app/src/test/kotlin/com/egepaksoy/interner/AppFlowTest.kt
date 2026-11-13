@@ -106,6 +106,33 @@ class AppFlowTest {
         waitForText("Boroskop muayenesi")
         shot("3-gunluk")
 
+        // Tablo ve takvim görünümleri
+        rule.onNodeWithText("Tablo").performClick()
+        waitForText("Toplam: 4 gün, 29,5 saat")
+        rule.onNodeWithText("Yapılan işler").assertIsDisplayed()
+        shot("6-tablo")
+        rule.onNodeWithText("Takvim").performClick()
+        waitForText("Bu güne bir kayıt daha ekle")
+        rule.onNodeWithText("Ana iniş takımı tekerlek değişimi").assertIsDisplayed()
+        shot("7-takvim")
+        // Önceki aydan boş bir güne takvimden kayıt ekle: tarih o gün olmalı.
+        rule.onNodeWithContentDescription("Önceki ay").performClick()
+        val emptyDay = LocalDate.now().minusMonths(1).withDayOfMonth(15).let {
+            if (it.toEpochDay() == today - 40) it.plusDays(1) else it
+        }
+        rule.onNodeWithContentDescription(com.egepaksoy.interner.data.fullDate(emptyDay.toEpochDay())).performClick()
+        rule.onNodeWithText("Bu güne kayıt ekle").performScrollTo().performClick()
+        waitForText("Yeni kayıt")
+        rule.onNodeWithText("Başlık").performTextInput("Takvimden eklenen kayıt")
+        rule.onNodeWithText("Kaydet").performClick()
+        waitForText("Bu güne bir kayıt daha ekle")
+        assertEquals(
+            emptyDay.toEpochDay(),
+            runBlocking { dao.allEntries() }.single { it.title == "Takvimden eklenen kayıt" }.date,
+        )
+        rule.onNodeWithText("Liste").performClick()
+        waitForText("Kayıtlarda ara")
+
         rule.onNodeWithText("Kayıtlarda ara").performTextInput("boroskop")
         rule.waitUntil(5_000) {
             rule.onAllNodesWithText("APU yağ seviyesi kontrolü").fetchSemanticsNodes().isEmpty()
@@ -128,7 +155,7 @@ class AppFlowTest {
         // Özet
         rule.onNodeWithText("Özet").performClick()
         waitForText("Kayıtlı gün")
-        rule.onNodeWithText("4 / 30 gün · 26 gün kaldı").assertIsDisplayed()
+        rule.onNodeWithText("5 / 30 gün · 25 gün kaldı").assertIsDisplayed()
         rule.onNodeWithText("29,5").assertIsDisplayed()
         shot("5-ozet")
     }

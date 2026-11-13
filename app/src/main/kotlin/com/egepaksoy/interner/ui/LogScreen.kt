@@ -23,9 +23,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,6 +68,40 @@ fun listPadding(pad: PaddingValues): PaddingValues {
 
 @Composable
 fun LogScreen(
+    entries: List<LogEntry>,
+    internship: Internship?,
+    pad: PaddingValues,
+    onOpen: (Long) -> Unit,
+    onNew: (Long) -> Unit,
+    onInternship: () -> Unit,
+) {
+    var view by rememberSaveable { mutableIntStateOf(0) }
+    // Üst boşluğu burada, alt boşluğu (alt çubuk) her görünüm kendi içinde uygular.
+    val inner = PaddingValues(bottom = pad.calculateBottomPadding())
+    Column(Modifier.fillMaxSize().padding(top = pad.calculateTopPadding())) {
+        SingleChoiceSegmentedButtonRow(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        ) {
+            LOG_VIEWS.forEachIndexed { i, label ->
+                SegmentedButton(
+                    selected = view == i,
+                    onClick = { view = i },
+                    shape = SegmentedButtonDefaults.itemShape(i, LOG_VIEWS.size),
+                ) { Text(label) }
+            }
+        }
+        when (view) {
+            0 -> LogList(entries, internship, inner, onOpen, onInternship)
+            1 -> LogTable(entries, inner, onOpen)
+            else -> LogCalendar(entries, inner, onOpen, onNew)
+        }
+    }
+}
+
+private val LOG_VIEWS = listOf("Liste", "Tablo", "Takvim")
+
+@Composable
+private fun LogList(
     entries: List<LogEntry>,
     internship: Internship?,
     pad: PaddingValues,
@@ -189,7 +227,7 @@ private fun ProgressCard(entries: List<LogEntry>, internship: Internship?, onCli
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EntryCard(entry: LogEntry, dayNumber: Int, onClick: () -> Unit) {
+internal fun EntryCard(entry: LogEntry, dayNumber: Int, onClick: () -> Unit) {
     val date = LocalDate.ofEpochDay(entry.date)
     Card(
         onClick = onClick,

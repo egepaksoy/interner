@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.egepaksoy.interner.data.Internship
 import com.egepaksoy.interner.data.LogEntry
+import com.egepaksoy.interner.data.Xlsx
+import com.egepaksoy.interner.data.writeDiaryXlsx
 import com.egepaksoy.interner.data.computeStats
 import com.egepaksoy.interner.data.diaryText
 import com.egepaksoy.interner.data.formatHours
@@ -66,6 +68,19 @@ fun SummaryScreen(
                 val json = vm.backupJson()
                 withContext(Dispatchers.IO) { context.writeText(uri, json) }
             }.fold({ toast("Yedek kaydedildi") }, { toast("Yedek kaydedilemedi: ${it.message}") })
+        }
+    }
+    val excel = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(Xlsx.MIME),
+    ) { uri ->
+        if (uri != null) scope.launch {
+            runCatching {
+                val notes = vm.notes.value.orEmpty()
+                withContext(Dispatchers.IO) {
+                    val stream = context.contentResolver.openOutputStream(uri, "wt") ?: error("Dosya açılamadı")
+                    stream.use { writeDiaryXlsx(it, entries, notes) }
+                }
+            }.fold({ toast("Excel dosyası kaydedildi") }, { toast("Excel dosyası kaydedilemedi: ${it.message}") })
         }
     }
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -107,6 +122,11 @@ fun SummaryScreen(
             enabled = entries.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Staj defterini metin olarak paylaş") }
+        FilledTonalButton(
+            onClick = { excel.launch("staj-defteri-${LocalDate.now()}.xlsx") },
+            enabled = entries.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Excel dosyası olarak kaydet (.xlsx)") }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
                 onClick = { backup.launch("staj-defteri-${LocalDate.now()}.json") },

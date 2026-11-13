@@ -2,9 +2,9 @@
 
 Uçak bakım teknisyenliği stajı için günlük takip uygulaması (Android, Kotlin + Jetpack Compose).
 
-- **Günlük:** Her staj günü için yapılan işler, öğrenilenler, çalışma alanı, uçak tipi/tescil, ATA bölümü, referans doküman, süre ve sorumlu teknisyen. Kayıtlarda arama, aylara göre gruplama, gün sayacı.
+- **Günlük:** Her staj günü için yapılan işler, öğrenilenler, çalışma alanı, uçak tipi/tescil, ATA bölümü, referans doküman, süre ve sorumlu teknisyen. Kayıtlar liste, tablo ya da aylık takvim olarak görüntülenebilir; arama, aylara göre gruplama ve gün sayacı vardır.
 - **Notlar:** Serbest notlar; arama ve başa sabitleme.
-- **Özet:** Hedef gün ilerlemesi, toplam saat, alan / uçak tipi / ATA dağılımı. Defteri metin olarak paylaşma, JSON yedek alma ve geri yükleme.
+- **Özet:** Hedef gün ilerlemesi, toplam saat, alan / uçak tipi / ATA dağılımı. Defteri metin olarak paylaşma, Excel (.xlsx) dosyası olarak kaydetme, JSON yedek alma ve geri yükleme.
 
 Veriler yalnızca cihazda (Room veritabanı) saklanır; uygulama internet izni istemez.
 
