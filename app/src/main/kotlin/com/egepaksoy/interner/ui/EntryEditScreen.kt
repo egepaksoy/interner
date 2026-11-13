@@ -23,13 +23,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +49,7 @@ import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.WORK_AREAS
 import com.egepaksoy.interner.data.formatHours
 import com.egepaksoy.interner.data.fullDate
+import com.egepaksoy.interner.ui.theme.areaColor
 
 /** Boş metin 0 saat sayılır; geçersiz ya da 0–24 dışı değer `null` döner. */
 fun parseHours(text: String): Double? {
@@ -154,7 +156,11 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                             Icon(Icons.Default.Delete, contentDescription = "Kaydı sil")
                         }
                     }
-                    TextButton(onClick = ::save, enabled = ready) { Text("Kaydet") }
+                    Button(
+                        onClick = ::save,
+                        enabled = ready,
+                        modifier = Modifier.padding(start = 4.dp, end = 12.dp),
+                    ) { Text("Kaydet") }
                 },
             )
         },
@@ -209,11 +215,18 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
 
             SectionTitle("Çalışma alanı", Modifier.padding(top = 4.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                WORK_AREAS.forEach { option ->
+                // Eski sürümlerden kalan, artık listede olmayan alan da seçili görünsün.
+                val options = if (area.isBlank() || area in WORK_AREAS) WORK_AREAS else WORK_AREAS + area
+                options.forEach { option ->
+                    val color = areaColor(option)
                     FilterChip(
                         selected = area == option,
                         onClick = { area = if (area == option) "" else option; dirty = true },
                         label = { Text(option) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = color.copy(alpha = 0.16f),
+                            selectedLabelColor = color,
+                        ),
                     )
                 }
             }

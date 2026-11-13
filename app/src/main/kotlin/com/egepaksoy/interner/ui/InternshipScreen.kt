@@ -19,7 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,7 +84,8 @@ fun InternshipScreen(vm: AppViewModel, onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    TextButton(
+                    Button(
+                        modifier = Modifier.padding(start = 4.dp, end = 12.dp),
                         onClick = {
                             vm.save(
                                 Internship(

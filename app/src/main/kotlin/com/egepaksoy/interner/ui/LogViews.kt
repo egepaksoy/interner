@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -89,17 +88,20 @@ fun LogTable(entries: List<LogEntry>, pad: PaddingValues, onOpen: (Long) -> Unit
     Box(Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) {
         Column(Modifier.width(totalWidth)) {
             TableRow(
-                modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 bold = true,
             ) { it.title }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = pad.calculateBottomPadding() + 88.dp),
             ) {
-                items(rows, key = { it.id }) { entry ->
-                    TableRow(Modifier.clickable { onOpen(entry.id) }) { it.value(entry, numbers[entry.date] ?: 0) }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                itemsIndexed(rows, key = { _, e -> e.id }) { i, entry ->
+                    // Okumayı kolaylaştırmak için satırlar dönüşümlü zeminli.
+                    val stripe = if (i % 2 == 0) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent
+                    TableRow(Modifier.background(stripe).clickable { onOpen(entry.id) }) {
+                        it.value(entry, numbers[entry.date] ?: 0)
+                    }
                 }
                 item(key = "total") {
                     val days = numbers.size
@@ -166,57 +168,61 @@ fun LogCalendar(
             .padding(start = 16.dp, end = 16.dp, bottom = pad.calculateBottomPadding() + 88.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { monthIndex-- }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Önceki ay")
-            }
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    month.format(monthFmt).replaceFirstChar { it.titlecase(TR) },
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    "${monthEntries.map { it.date }.distinct().size} gün · " +
-                        "${formatHours(monthEntries.sumOf { it.hours })} saat",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            IconButton(onClick = { monthIndex++ }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Sonraki ay")
-            }
-        }
-
-        Row {
-            weekdays.forEach {
-                Text(
-                    it,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-        // Haftalar pazartesiden başlar; ayın ilk gününden önceki hücreler boş kalır.
-        val lead = month.atDay(1).dayOfWeek.value - 1
-        val cells = List(lead) { null } + (1..month.lengthOfMonth()).map { month.atDay(it).toEpochDay() }
-        cells.chunked(7).forEach { week ->
-            Row {
-                week.forEach { day ->
-                    Box(Modifier.weight(1f).aspectRatio(1f).padding(2.dp)) {
-                        if (day != null) {
-                            DayCell(
-                                day = day,
-                                hours = byDate[day]?.sumOf { it.hours },
-                                selected = day == selected,
-                                today = day == today,
-                                onClick = { selected = day },
-                            )
-                        }
+        AppCard {
+            Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { monthIndex-- }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Önceki ay")
+                    }
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            month.format(monthFmt).replaceFirstChar { it.titlecase(TR) },
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            "${monthEntries.map { it.date }.distinct().size} gün · " +
+                                "${formatHours(monthEntries.sumOf { it.hours })} saat",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(onClick = { monthIndex++ }) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Sonraki ay")
                     }
                 }
-                repeat(7 - week.size) { Box(Modifier.weight(1f)) }
+
+                Row {
+                    weekdays.forEach {
+                        Text(
+                            it,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                // Haftalar pazartesiden başlar; ayın ilk gününden önceki hücreler boş kalır.
+                val lead = month.atDay(1).dayOfWeek.value - 1
+                val cells = List(lead) { null } + (1..month.lengthOfMonth()).map { month.atDay(it).toEpochDay() }
+                cells.chunked(7).forEach { week ->
+                    Row {
+                        week.forEach { day ->
+                            Box(Modifier.weight(1f).aspectRatio(1f).padding(2.dp)) {
+                                if (day != null) {
+                                    DayCell(
+                                        day = day,
+                                        hours = byDate[day]?.sumOf { it.hours },
+                                        selected = day == selected,
+                                        today = day == today,
+                                        onClick = { selected = day },
+                                    )
+                                }
+                            }
+                        }
+                        repeat(7 - week.size) { Box(Modifier.weight(1f)) }
+                    }
+                }
             }
         }
 

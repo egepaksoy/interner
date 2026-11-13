@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Staj Defteri</string>
+    <string name="widget_progress_label">Staj ilerlemesi</string>
+    <string name="widget_progress_description">Tamamlanan gün, hedef ve toplam saat</string>
+    <string name="widget_today_label">Bugün</string>
+    <string name="widget_today_description">Bugünü yazdın mı? Tek dokunuşla kayıt ekle</string>
+    <string name="widget_last_label">Son kayıt</string>
+    <string name="widget_last_description">En son yazdığın günlük kaydı</string>
+    <string name="widget_week_label">Bu hafta</string>
+    <string name="widget_week_description">Haftanın hangi günlerini yazdığını gösterir</string>
 </resources>

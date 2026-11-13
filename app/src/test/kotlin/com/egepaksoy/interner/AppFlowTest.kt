@@ -52,6 +52,24 @@ class AppFlowTest {
     }
 
     @Test
+    fun widgetIntentOpensNewEntryForThatDate() {
+        waitForText("Henüz kayıt yok")
+        val date = LocalDate.of(2026, 3, 9).toEpochDay()
+        val intent = android.content.Intent(rule.activity, MainActivity::class.java)
+            .putExtra(MainActivity.EXTRA_ROUTE, com.egepaksoy.interner.ui.entryRoute(0, date))
+        rule.runOnUiThread { rule.activity.onNewIntent(intent) }
+        waitForText("Yeni kayıt")
+        rule.onNodeWithText("9 Mart 2026, Pazartesi").assertIsDisplayed()
+
+        // Tanınmayan rota yok sayılır, uygulama çökmez.
+        rule.runOnUiThread {
+            rule.activity.onNewIntent(android.content.Intent().putExtra(MainActivity.EXTRA_ROUTE, "olmayan/ekran"))
+        }
+        rule.waitForIdle()
+        rule.onNodeWithText("Yeni kayıt").assertIsDisplayed()
+    }
+
+    @Test
     fun writeADayTakeANoteAndSeeTheSummary() {
         waitForText("Henüz kayıt yok")
         shot("1-bos")
@@ -98,7 +116,7 @@ class AppFlowTest {
             dao.insertEntries(
                 listOf(
                     LogEntry(date = today - 1, title = "APU yağ seviyesi kontrolü", work = "Servis panelinden seviye okundu, yağ ikmali yapıldı.", area = "Hat Bakım", aircraft = "B737", registration = "TC-XYZ", ata = "49 - APU", hours = 8.0),
-                    LogEntry(date = today - 2, title = "Boroskop muayenesi", work = "HPC kademelerinde boroskop ile hasar kontrolü izlendi.", area = "Motor Atölyesi", aircraft = "A320", ata = "72 - Motor", hours = 6.0),
+                    LogEntry(date = today - 2, title = "Boroskop muayenesi", work = "HPC kademelerinde boroskop ile hasar kontrolü izlendi.", area = "C-Check", aircraft = "A320", ata = "72 - Motor", hours = 6.0),
                     LogEntry(date = today - 40, title = "Emniyet ve hangar oryantasyonu", area = "Eğitim", hours = 8.0),
                 ),
             )
@@ -155,7 +173,7 @@ class AppFlowTest {
         // Özet
         rule.onNodeWithText("Özet").performClick()
         waitForText("Kayıtlı gün")
-        rule.onNodeWithText("5 / 30 gün · 25 gün kaldı").assertIsDisplayed()
+        rule.onNodeWithText("25 gün kaldı", substring = true).assertIsDisplayed()
         rule.onNodeWithText("29,5").assertIsDisplayed()
         shot("5-ozet")
     }

@@ -1,9 +1,8 @@
 package com.egepaksoy.interner.ui
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.egepaksoy.interner.InternerApp
+import com.egepaksoy.interner.data.AppDao
 import com.egepaksoy.interner.data.Backup
 import com.egepaksoy.interner.data.BackupData
 import com.egepaksoy.interner.data.Internship
@@ -13,8 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val dao = (app as InternerApp).db.dao()
+class AppViewModel(private val dao: AppDao) : ViewModel() {
 
     /** `null` = henüz yüklenmedi. */
     val entries = dao.entries().stateIn(viewModelScope, SharingStarted.Eagerly, null)

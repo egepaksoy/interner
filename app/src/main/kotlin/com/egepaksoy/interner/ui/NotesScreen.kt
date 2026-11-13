@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,8 +21,6 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,13 +60,15 @@ fun NotesScreen(
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(notes, query) { notes.filter { matches(query, it.title, it.content) } }
 
-    LazyColumn(
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = listPadding(pad),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalItemSpacing = 10.dp,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         if (notes.isEmpty()) {
-            item(key = "empty") {
+            item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
                 EmptyState(
                     Icons.Default.Create,
                     "Henüz not yok",
@@ -74,9 +76,11 @@ fun NotesScreen(
                 )
             }
         } else {
-            item(key = "search") { SearchField(query, { query = it }, "Notlarda ara") }
+            item(key = "search", span = StaggeredGridItemSpan.FullLine) {
+                SearchField(query, { query = it }, "Notlarda ara")
+            }
             if (shown.isEmpty()) {
-                item(key = "none") {
+                item(key = "none", span = StaggeredGridItemSpan.FullLine) {
                     EmptyState(Icons.Default.Search, "Sonuç yok", "\"$query\" ile eşleşen not bulunamadı.")
                 }
             }
@@ -89,20 +93,21 @@ fun NotesScreen(
 
 @Composable
 private fun NoteCard(note: Note, onClick: () -> Unit, onPin: () -> Unit) {
-    Card(
-        onClick = onClick,
+    val pinColor = MaterialTheme.colorScheme.tertiary
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        onClick = onClick,
+        borderColor = if (note.pinned) pinColor else MaterialTheme.colorScheme.outlineVariant,
     ) {
-        Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 14.dp, end = 4.dp)) {
+        Column(Modifier.padding(start = 14.dp, top = 14.dp, end = 4.dp, bottom = 2.dp)) {
             Column(
-                modifier = Modifier.weight(1f).padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(end = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
                     note.title.ifBlank { note.content.lineSequence().firstOrNull().orEmpty() },
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (note.title.isNotBlank() && note.content.isNotBlank()) {
@@ -110,23 +115,25 @@ private fun NoteCard(note: Note, onClick: () -> Unit, onPin: () -> Unit) {
                         note.content,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
+                        maxLines = 8,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     updatedLabel(note.updatedAt),
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            IconButton(onClick = onPin) {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = if (note.pinned) "Sabitlemeyi kaldır" else "Başa sabitle",
-                    tint = if (note.pinned) MaterialTheme.colorScheme.tertiary
-                    else MaterialTheme.colorScheme.outlineVariant,
-                )
+                IconButton(onClick = onPin) {
+                    Icon(
+                        Icons.Default.Star,
+                        contentDescription = if (note.pinned) "Sabitlemeyi kaldır" else "Başa sabitle",
+                        tint = if (note.pinned) pinColor else MaterialTheme.colorScheme.outlineVariant,
+                    )
+                }
             }
         }
     }

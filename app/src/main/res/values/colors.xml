@@ -1,0 +1,10 @@
+<resources>
+    <!-- Ana ekran widget'ları (uygulama temasıyla aynı tonlar) -->
+    <color name="widget_surface">#FFFFFF</color>
+    <color name="widget_on_surface">#151A22</color>
+    <color name="widget_on_surface_variant">#596273</color>
+    <color name="widget_primary">#0B4F9E</color>
+    <color name="widget_on_primary">#FFFFFF</color>
+    <color name="widget_gradient_start">#0A3A78</color>
+    <color name="widget_gradient_end">#1A6FD0</color>
+</resources>

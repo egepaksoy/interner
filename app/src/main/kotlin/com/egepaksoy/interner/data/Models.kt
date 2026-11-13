@@ -44,13 +44,11 @@ data class Internship(
 val WORK_AREAS = listOf(
     "Hat Bakım",
     "Hangar / Üs Bakım",
-    "Motor Atölyesi",
-    "Komponent Atölyesi",
-    "Yapısal / Sac",
-    "Aviyonik",
-    "NDT",
+    "C-Check",
+    "Kabin",
+    "Yapısal",
+    "Takımhane",
     "Eğitim",
-    "Diğer",
 )
 
 val ATA_CHAPTERS = listOf(

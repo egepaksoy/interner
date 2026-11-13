@@ -1,0 +1,9 @@
+<resources>
+    <color name="widget_surface">#181C23</color>
+    <color name="widget_on_surface">#E4E7EE</color>
+    <color name="widget_on_surface_variant">#A9B1C0</color>
+    <color name="widget_primary">#9CC4FF</color>
+    <color name="widget_on_primary">#002F63</color>
+    <color name="widget_gradient_start">#0F2E57</color>
+    <color name="widget_gradient_end">#1B4F91</color>
+</resources>

@@ -6,7 +6,21 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.egepaksoy.interner.ui.theme.areaColor
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,12 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -94,9 +103,9 @@ fun SummaryScreen(
             .padding(listPadding(pad)),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        InternshipCard(internship, stats.days, onInternship)
+        InternshipHero(internship, stats.days, stats.totalHours, onInternship)
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatTile("Kayıtlı gün", stats.days.toString(), Modifier.weight(1f))
             StatTile("Toplam saat", formatHours(stats.totalHours), Modifier.weight(1f))
             StatTile(
@@ -106,40 +115,48 @@ fun SummaryScreen(
             )
         }
 
-        Breakdown("Çalışma alanları", stats.byArea)
-        Breakdown("Uçak tipleri", stats.byAircraft)
-        Breakdown("ATA bölümleri", stats.byAta)
+        Breakdown("Çalışma alanları", stats.byArea) { areaColor(it) }
+        Breakdown("Uçak tipleri", stats.byAircraft) { MaterialTheme.colorScheme.primary }
+        Breakdown("ATA bölümleri", stats.byAta) { MaterialTheme.colorScheme.primary }
 
-        SectionTitle("Dışa aktar ve yedekle", Modifier.padding(top = 8.dp))
-        FilledTonalButton(
-            onClick = {
-                val send = Intent(Intent.ACTION_SEND)
-                    .setType("text/plain")
-                    .putExtra(Intent.EXTRA_SUBJECT, "Staj Defteri")
-                    .putExtra(Intent.EXTRA_TEXT, diaryText(internship, entries))
-                context.startActivity(Intent.createChooser(send, "Staj defterini paylaş"))
-            },
-            enabled = entries.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Staj defterini metin olarak paylaş") }
-        FilledTonalButton(
-            onClick = { excel.launch("staj-defteri-${LocalDate.now()}.xlsx") },
-            enabled = entries.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Excel dosyası olarak kaydet (.xlsx)") }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(
-                onClick = { backup.launch("staj-defteri-${LocalDate.now()}.json") },
-                modifier = Modifier.weight(1f),
-            ) { Text("Yedekle") }
-            OutlinedButton(
-                onClick = { restore.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
-                modifier = Modifier.weight(1f),
-            ) { Text("Yedekten yükle") }
+        Text(
+            "Dışa aktar ve yedekle",
+            modifier = Modifier.padding(top = 8.dp, start = 4.dp),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        AppCard(Modifier.fillMaxWidth()) {
+            Column {
+                ActionRow(
+                    "Metin olarak paylaş",
+                    "Staj defterine geçirmek için gün gün düz metin",
+                    enabled = entries.isNotEmpty(),
+                ) {
+                    val send = Intent(Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(Intent.EXTRA_SUBJECT, "Staj Defteri")
+                        .putExtra(Intent.EXTRA_TEXT, diaryText(internship, entries))
+                    context.startActivity(Intent.createChooser(send, "Staj defterini paylaş"))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ActionRow(
+                    "Excel dosyası olarak kaydet",
+                    ".xlsx · her kayıt bir satır, notlar ayrı sayfada",
+                    enabled = entries.isNotEmpty(),
+                ) { excel.launch("staj-defteri-${LocalDate.now()}.xlsx") }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ActionRow("Yedekle", "Tüm kayıtları ve notları tek dosyaya kaydet") {
+                    backup.launch("staj-defteri-${LocalDate.now()}.json")
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ActionRow("Yedekten yükle", "Telefondaki verilerin yerine yedektekileri koyar") {
+                    restore.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                }
+            }
         }
         Text(
             "Veriler yalnızca bu telefonda saklanır. Telefon değiştirmeden ya da uygulamayı " +
                 "silmeden önce yedek almayı unutma.",
+            modifier = Modifier.padding(horizontal = 4.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -179,73 +196,46 @@ private fun Context.readText(uri: Uri): String {
 }
 
 @Composable
-private fun InternshipCard(internship: Internship?, days: Int, onEdit: () -> Unit) {
-    Card(
-        onClick = onEdit,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+private fun ActionRow(title: String, subtitle: String, enabled: Boolean = true, onClick: () -> Unit) {
+    val alpha = if (enabled) 1f else 0.4f
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(start = 16.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (internship == null || internship.company.isBlank()) {
-                Text("Staj bilgilerini ekle", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Kurum, tarih ve hedef gün sayısını gir.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                return@Column
-            }
+        Column(Modifier.weight(1f)) {
             Text(
-                internship.company,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
             )
-            if (internship.department.isNotBlank()) {
-                Text(internship.department, style = MaterialTheme.typography.bodyLarge)
-            }
-            val start = internship.startDate
-            val end = internship.endDate
-            if (start != null || end != null) {
-                Text(
-                    "${start?.let(::shortDate) ?: "?"} – ${end?.let(::shortDate) ?: "?"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            if (internship.targetDays > 0) {
-                val left = (internship.targetDays - days).coerceAtLeast(0)
-                Text(
-                    if (left == 0) "Hedef tamamlandı: $days / ${internship.targetDays} gün"
-                    else "$days / ${internship.targetDays} gün · $left gün kaldı",
-                    modifier = Modifier.padding(top = 8.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                LinearProgressIndicator(
-                    progress = { (days.toFloat() / internship.targetDays).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                    trackColor = MaterialTheme.colorScheme.surface,
-                    drawStopIndicator = {},
-                )
-            }
             Text(
-                "Düzenlemek için dokun",
-                modifier = Modifier.padding(top = 8.dp),
-                style = MaterialTheme.typography.labelMedium,
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha),
             )
         }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline.copy(alpha = alpha),
+        )
     }
 }
 
 @Composable
 private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    AppCard(modifier) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
+            Text(
+                value,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+            )
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,
@@ -259,17 +249,14 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 
 /** Kayıt sayısına göre sıralı yatay çubuk listesi; veri yoksa hiç gösterilmez. */
 @Composable
-private fun Breakdown(title: String, rows: List<Pair<String, Int>>) {
+private fun Breakdown(title: String, rows: List<Pair<String, Int>>, color: @Composable (String) -> Color) {
     if (rows.isEmpty()) return
     val max = rows.maxOf { it.second }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionTitle(title)
+    AppCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
             rows.forEach { (name, count) ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row {
                         Text(
                             name,
@@ -284,11 +271,21 @@ private fun Breakdown(title: String, rows: List<Pair<String, Int>>) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    LinearProgressIndicator(
-                        progress = { count.toFloat() / max },
-                        modifier = Modifier.fillMaxWidth(),
-                        drawStopIndicator = {},
-                    )
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(count.toFloat() / max)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .background(color(name)),
+                        )
+                    }
                 }
             }
         }
