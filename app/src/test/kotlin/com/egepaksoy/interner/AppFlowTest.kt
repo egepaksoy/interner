@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -67,6 +69,20 @@ class AppFlowTest {
         }
         rule.waitForIdle()
         rule.onNodeWithText("Yeni kayıt").assertIsDisplayed()
+    }
+
+    @Test
+    fun oldLowercaseAircraftDoesNotShowAsExtraChoice() {
+        waitForText("Henüz kayıt yok")
+        runBlocking { dao.insertEntries(listOf(LogEntry(date = LocalDate.now().toEpochDay() - 1, title = "Eski kayıt", aircraft = "a320"))) }
+        waitForText("Eski kayıt")
+        rule.onNodeWithText("Gün ekle", useUnmergedTree = true).performClick()
+        waitForText("Uçak tipi")
+        // Tek bir A320 seçeneği var, seçili geliyor; küçük harfli kopya yok.
+        rule.onNodeWithText("A320").performScrollTo().assertIsSelected()
+        assertEquals(0, rule.onAllNodesWithText("a320").fetchSemanticsNodes().size)
+        rule.onNodeWithText("B737").performScrollTo().performClick()
+        rule.onNodeWithText("A320").assertIsNotSelected()
     }
 
     @Test

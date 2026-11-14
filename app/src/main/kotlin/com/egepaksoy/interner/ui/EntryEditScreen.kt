@@ -27,6 +27,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ import com.egepaksoy.interner.data.ATA_CHAPTERS
 import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.WORK_AREAS
 import com.egepaksoy.interner.data.fullDate
+import com.egepaksoy.interner.data.normalizeAircraft
 import com.egepaksoy.interner.ui.theme.areaColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -77,14 +79,15 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                 work = it.work
                 learned = it.learned
                 area = it.area
-                aircraft = it.aircraft
+                aircraft = normalizeAircraft(it.aircraft)
                 ata = it.ata
             }
         } else {
             // Yeni kayıtta genelde değişmeyen alanları son kayıttan al.
             vm.latestEntry()?.let {
                 area = it.area
-                aircraft = it.aircraft
+                // Listede olmayan eski bir değeri yeni kayda taşıma.
+                aircraft = normalizeAircraft(it.aircraft).takeIf { a -> a in AIRCRAFT_TYPES }.orEmpty()
             }
         }
         ready = true
@@ -219,6 +222,10 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
                         selected = aircraft == option,
                         onClick = { aircraft = if (aircraft == option) "" else option; dirty = true },
                         label = { Text(option) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
                     )
                 }
             }

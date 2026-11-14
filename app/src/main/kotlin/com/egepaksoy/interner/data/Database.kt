@@ -50,6 +50,21 @@ interface AppDao {
     @Upsert
     suspend fun upsert(internship: Internship)
 
+    @Query("SELECT DISTINCT aircraft FROM entries WHERE aircraft != ''")
+    suspend fun aircraftValues(): List<String>
+
+    @Query("UPDATE entries SET aircraft = :to WHERE aircraft = :from")
+    suspend fun renameAircraft(from: String, to: String)
+
+    /** Kayıtlı uçak tiplerini listedeki adlara çevirir ("a320" → "A320"). */
+    @Transaction
+    suspend fun normalizeAircraftValues() {
+        for (value in aircraftValues()) {
+            val normalized = normalizeAircraft(value)
+            if (normalized != value) renameAircraft(value, normalized)
+        }
+    }
+
     @Insert
     suspend fun insertEntries(entries: List<LogEntry>)
 

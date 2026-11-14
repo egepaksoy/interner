@@ -19,6 +19,7 @@ import com.egepaksoy.interner.widget.TodayWidget
 import com.egepaksoy.interner.widget.WeekWidget
 import com.egepaksoy.interner.widget.WidgetData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -80,9 +81,23 @@ class WidgetTest {
 
     @Test
     fun todayWidget() {
-        val view = show(TodayWidget().render(context, data), 260, 80, "bugun")
-        assertEquals("13 Kasım, Cuma", view.text(R.id.today_date))
-        assertEquals("Bugün yazıldı", view.text(R.id.today_status))
+        // Geniş widget: başlık tamamen sığar.
+        val wide = show(TodayWidget().render(context, data, 400), 400, 80, "bugun-genis")
+        assertEquals("13 Kasım, Cuma", wide.text(R.id.today_date))
+        assertEquals("Ana iniş takımı tekerlek değişimi", wide.text(R.id.today_status))
+
+        // Dar widget: sığan kelimeler kalır, sonu "…" ile biter, kelime ortadan bölünmez.
+        val view = show(TodayWidget().render(context, data, 260), 260, 80, "bugun")
+        val shown = view.text(R.id.today_status)
+        assertTrue(shown, shown.endsWith("…"))
+        assertTrue(shown, "Ana iniş takımı tekerlek değişimi".startsWith(shown.removeSuffix("…")))
+        assertTrue(shown, shown.removeSuffix("…").split(" ").all { it in listOf("Ana", "iniş", "takımı", "tekerlek", "değişimi") })
+        val status = view.findViewById<TextView>(R.id.today_status)
+        assertTrue(status.paint.measureText(shown) <= status.width)
+
+        // Başlıksız kayıt: "Bugün yazıldı".
+        val untitled = WidgetData(null, listOf(LogEntry(id = 5, date = today, work = "Sadece iş metni")), today)
+        assertEquals("Bugün yazıldı", show(TodayWidget().render(context, untitled), 260, 80, "bugun-basliksiz").text(R.id.today_status))
         val none = show(TodayWidget().render(context, empty), 260, 80, "bugun-bos")
         assertEquals("Bugün henüz yazılmadı", none.text(R.id.today_status))
         assertEquals("+ Yaz", none.text(R.id.today_add))

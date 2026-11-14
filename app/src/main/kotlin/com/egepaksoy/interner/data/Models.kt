@@ -57,6 +57,19 @@ val WORK_AREAS = listOf(
 
 val AIRCRAFT_TYPES = listOf("A320", "A321", "B737")
 
+/** Eski sürümlerde elle yazılmış tip adlarının ("a320", "737", "B 737" ...) karşılığı. */
+private val AIRCRAFT_ALIASES = mapOf(
+    "A320" to "A320", "AIRBUSA320" to "A320",
+    "A321" to "A321", "AIRBUSA321" to "A321",
+    "B737" to "B737", "737" to "B737", "BOEING737" to "B737",
+)
+
+/** Bilinen bir tipin farklı yazımını listedeki ada çevirir; bilinmeyen değer olduğu gibi kalır. */
+fun normalizeAircraft(value: String): String {
+    val key = value.uppercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
+    return AIRCRAFT_ALIASES[key] ?: value.trim()
+}
+
 val ATA_CHAPTERS = listOf(
     "05 - Periyodik Kontroller",
     "07 - Kaldırma ve Destekleme",

@@ -66,6 +66,7 @@ class AppViewModel(private val dao: AppDao) : ViewModel() {
     suspend fun restore(json: String): Pair<Int, Int> {
         val data = Backup.parse(json)
         dao.replaceAll(data)
+        dao.normalizeAircraftValues()
         return data.entries.size to data.notes.size
     }
 }

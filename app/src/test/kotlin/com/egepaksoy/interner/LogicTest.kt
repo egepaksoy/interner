@@ -94,6 +94,15 @@ class LogicTest {
     }
 
     @Test
+    fun aircraftNamesAreNormalized() {
+        assertEquals("A320", com.egepaksoy.interner.data.normalizeAircraft("a320"))
+        assertEquals("A321", com.egepaksoy.interner.data.normalizeAircraft(" a-321 "))
+        assertEquals("B737", com.egepaksoy.interner.data.normalizeAircraft("737"))
+        assertEquals("B737", com.egepaksoy.interner.data.normalizeAircraft("Boeing 737"))
+        assertEquals("ATR72", com.egepaksoy.interner.data.normalizeAircraft("ATR72"))
+    }
+
+    @Test
     fun weekdayCountSkipsWeekends() {
         assertEquals(5, weekdaysBetween(d1, d1 + 6))
         assertEquals(1, weekdaysBetween(d1, d1))

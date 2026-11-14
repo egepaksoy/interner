@@ -21,6 +21,7 @@ class InternerApp : Application() {
         // Kayıtlar ya da staj bilgileri her değiştiğinde ana ekran widget'larını güncelle.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val dao = db.dao()
+            dao.normalizeAircraftValues()
             combine(dao.entries(), dao.internship()) { _, _ -> }
                 .drop(1) // ilk değer mevcut durumdur, değişiklik değil
                 .collect { Widgets.updateAll(this@InternerApp) }

@@ -66,7 +66,8 @@ object Widgets {
 }
 
 abstract class BaseWidget : AppWidgetProvider() {
-    abstract fun render(context: Context, data: WidgetData): RemoteViews
+    /** @param widthDp widget'ın ana ekrandaki genişliği (bilinmiyorsa makul bir varsayılan) */
+    abstract fun render(context: Context, data: WidgetData, widthDp: Int = DEFAULT_WIDTH_DP): RemoteViews
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         // Yayın alıcısı içinden çağrıldıysa veritabanı okunana kadar süreci canlı tut.
@@ -75,17 +76,54 @@ abstract class BaseWidget : AppWidgetProvider() {
             try {
                 val dao = (context.applicationContext as InternerApp).db.dao()
                 val data = WidgetData(dao.currentInternship(), dao.allEntries(), LocalDate.now().toEpochDay())
-                manager.updateAppWidget(ids, render(context, data))
+                for (id in ids) manager.updateAppWidget(id, render(context, data, widthDp(manager, id)))
             } finally {
                 pending?.finish()
             }
         }
     }
+
+    // Boyutu değiştirilince metin sığdırma yeniden hesaplansın.
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        manager: AppWidgetManager,
+        id: Int,
+        newOptions: android.os.Bundle,
+    ) = onUpdate(context, manager, intArrayOf(id))
+
+    /** Dikey ekrandaki genişlik; ana ekran bildirmezse varsayılan kullanılır. */
+    private fun widthDp(manager: AppWidgetManager, id: Int): Int =
+        manager.getAppWidgetOptions(id)?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            ?.takeIf { it > 0 } ?: DEFAULT_WIDTH_DP
+
+    companion object {
+        const val DEFAULT_WIDTH_DP = 250
+    }
+}
+
+/**
+ * [text]'i [maxWidthPx] genişliğe tek satır olarak sığdırır: sığmazsa kelime kelime kısaltıp
+ * sonuna "…" ekler. İlk kelime bile sığmıyorsa harf düzeyinde kısaltır.
+ */
+fun fitWords(text: String, paint: android.graphics.Paint, maxWidthPx: Float): String {
+    val clean = text.trim().replace(Regex("\\s+"), " ")
+    if (paint.measureText(clean) <= maxWidthPx) return clean
+    val words = clean.split(' ')
+    var fitted = ""
+    for (word in words) {
+        val candidate = if (fitted.isEmpty()) word else "$fitted $word"
+        if (paint.measureText("$candidate…") > maxWidthPx) break
+        fitted = candidate
+    }
+    if (fitted.isNotEmpty()) return "${fitted.trimEnd(',', '.', ';', ':', '-')}…"
+    var chars = clean
+    while (chars.length > 1 && paint.measureText("$chars…") > maxWidthPx) chars = chars.dropLast(1)
+    return "$chars…"
 }
 
 /** Gün sayacı ve hedefe göre ilerleme çubuğu. */
 class ProgressWidget : BaseWidget() {
-    override fun render(context: Context, data: WidgetData) =
+    override fun render(context: Context, data: WidgetData, widthDp: Int) =
         RemoteViews(context.packageName, R.layout.widget_progress).apply {
             val stats = computeStats(data.entries)
             val target = data.internship?.targetDays ?: 0
@@ -111,17 +149,32 @@ class ProgressWidget : BaseWidget() {
 
 /** Bugünün yazılıp yazılmadığını gösterir; düğme bugüne yeni kayıt açar. */
 class TodayWidget : BaseWidget() {
-    override fun render(context: Context, data: WidgetData) =
+    override fun render(context: Context, data: WidgetData, widthDp: Int) =
         RemoteViews(context.packageName, R.layout.widget_today).apply {
             val todays = data.entries.filter { it.date == data.today }
             setTextViewText(R.id.today_date, LocalDate.ofEpochDay(data.today).format(dayMonthFmt))
+            val addLabel = if (todays.isEmpty()) "+ Yaz" else "+ Ekle"
+            // Bugünün en son kaydının başlığı; başlık yoksa genel durum metni.
+            val title = todays.firstOrNull { it.title.isNotBlank() }?.title
             val status = when {
                 todays.isEmpty() -> "Bugün henüz yazılmadı"
-                todays.size == 1 -> "Bugün yazıldı"
-                else -> "Bugün yazıldı · ${todays.size} kayıt"
+                title == null -> "Bugün yazıldı"
+                else -> {
+                    val res = context.resources
+                    val sp = res.displayMetrics.scaledDensity
+                    val dp = res.displayMetrics.density
+                    val titlePaint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                        textSize = 15 * sp
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    }
+                    val buttonPaint = android.text.TextPaint(titlePaint).apply { textSize = 14 * sp }
+                    // widget_today.xml: kenar boşlukları 16+12dp, düğme 16+16dp iç + 8dp dış boşluk.
+                    val button = buttonPaint.measureText(addLabel) + 40 * dp
+                    fitWords(title, titlePaint, widthDp * dp - 28 * dp - button)
+                }
             }
             setTextViewText(R.id.today_status, status)
-            setTextViewText(R.id.today_add, if (todays.isEmpty()) "+ Yaz" else "+ Ekle")
+            setTextViewText(R.id.today_add, addLabel)
             // Karta dokunmak bugünün kaydını (yoksa yeni kaydı), düğme her zaman yeni kaydı açar.
             val newEntry = Widgets.openApp(context, entryRoute(0, data.today))
             val open = todays.firstOrNull()?.let { Widgets.openApp(context, entryRoute(it.id)) } ?: newEntry
@@ -132,7 +185,7 @@ class TodayWidget : BaseWidget() {
 
 /** En son tarihli kaydın özeti; dokununca o kayıt açılır. */
 class LastEntryWidget : BaseWidget() {
-    override fun render(context: Context, data: WidgetData) =
+    override fun render(context: Context, data: WidgetData, widthDp: Int) =
         RemoteViews(context.packageName, R.layout.widget_last).apply {
             val entry = data.entries.firstOrNull()
             if (entry == null) {
@@ -160,7 +213,7 @@ class LastEntryWidget : BaseWidget() {
 
 /** İçinde bulunulan haftanın yedi günü; kayıt olan günler dolu, bugün çerçeveli. */
 class WeekWidget : BaseWidget() {
-    override fun render(context: Context, data: WidgetData) =
+    override fun render(context: Context, data: WidgetData, widthDp: Int) =
         RemoteViews(context.packageName, R.layout.widget_week).apply {
             val monday = LocalDate.ofEpochDay(data.today).with(DayOfWeek.MONDAY)
             val byDate = data.entries.groupBy { it.date }
