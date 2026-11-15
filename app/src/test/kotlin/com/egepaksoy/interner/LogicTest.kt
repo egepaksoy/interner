@@ -103,6 +103,28 @@ class LogicTest {
     }
 
     @Test
+    fun ataSearchRanksBestMatchesFirst() {
+        val search: (String) -> List<String> = { com.egepaksoy.interner.data.searchAtaChapters(it) }
+        // Numara: önekiyle eşleşenler
+        assertEquals(listOf("32 - İniş Takımları"), search("32"))
+        assertEquals("72 - Motor", search("7").first { it.startsWith("72") })
+        assertTrue(search("7").all { it.startsWith("7") })
+        // Ad: Türkçe karakter yazmadan ve büyük/küçük harf fark etmeden
+        assertEquals(listOf("32 - İniş Takımları"), search("inis"))
+        assertEquals(listOf("32 - İniş Takımları"), search("İNİŞ"))
+        // Adı "motor" ile başlayanlar, adında "motor" geçenlerden önce
+        val motor = search("motor")
+        assertEquals("72 - Motor", motor.first())
+        assertTrue(motor.indexOf("79 - Yağ") == -1)
+        assertTrue(motor.containsAll(listOf("73 - Motor Yakıt ve Kontrol", "77 - Motor Göstergeleri")))
+        // Kelime başı: "yakıt" hem 28'i hem 73'ü bulur, adı "Yakıt" ile başlayan önce gelir
+        assertEquals(listOf("28 - Yakıt", "73 - Motor Yakıt ve Kontrol"), search("yakit"))
+        // Eşleşme yoksa boş, boş metinde tüm liste
+        assertTrue(search("xyz").isEmpty())
+        assertEquals(com.egepaksoy.interner.data.ATA_CHAPTERS, search("  "))
+    }
+
+    @Test
     fun weekdayCountSkipsWeekends() {
         assertEquals(5, weekdaysBetween(d1, d1 + 6))
         assertEquals(1, weekdaysBetween(d1, d1))

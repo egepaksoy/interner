@@ -2,7 +2,9 @@ package com.egepaksoy.interner.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,10 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -49,6 +54,7 @@ import com.egepaksoy.interner.data.LogEntry
 import com.egepaksoy.interner.data.WORK_AREAS
 import com.egepaksoy.interner.data.fullDate
 import com.egepaksoy.interner.data.normalizeAircraft
+import com.egepaksoy.interner.data.searchAtaChapters
 import com.egepaksoy.interner.ui.theme.areaColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -231,6 +237,8 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
             }
 
             AtaField(ata) { ata = it; dirty = true }
+            // ATA alanı yukarı kaydırılabilsin, klavye açıkken altında önerilere yer kalsın.
+            Spacer(Modifier.height(240.dp))
         }
     }
 
@@ -255,36 +263,71 @@ fun EntryEditScreen(vm: AppViewModel, id: Long, initialDate: Long?, onBack: () -
     }
 }
 
-/** Serbest metin girilebilen, sağdaki oktan hazır ATA bölümü de seçilebilen alan. */
+/**
+ * Yazdıkça ATA listesinde arama yapan alan: eşleşen bölümler alanın altında önerilir,
+ * birine dokununca alan doldurulur. Sağdaki ok tüm listeyi açar. Listede olmayan bir değer
+ * de yazılabilir.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AtaField(value: String, onChange: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    Box {
+    // Ok ile açıldıysa yazılana bakmadan tüm liste gösterilir.
+    var showAll by remember { mutableStateOf(false) }
+    val suggestions = remember(value, showAll) {
+        if (showAll) ATA_CHAPTERS else searchAtaChapters(value).filter { it != value }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && suggestions.isNotEmpty(),
+        onExpandedChange = { expanded = it; showAll = it },
+    ) {
         OutlinedTextField(
             value = value,
-            onValueChange = onChange,
-            modifier = Modifier.fillMaxWidth(),
+            onValueChange = {
+                onChange(it)
+                showAll = false
+                expanded = it.isNotBlank()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
             label = { Text("ATA bölümü") },
-            placeholder = { Text("Yaz ya da listeden seç") },
+            placeholder = { Text("Numara ya da ad yaz: 32, iniş, motor…") },
             singleLine = true,
             trailingIcon = {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = "ATA bölümü listesi")
+                Row {
+                    if (value.isNotEmpty()) {
+                        IconButton(onClick = { onChange(""); expanded = false }) {
+                            Icon(Icons.Default.Clear, contentDescription = "ATA bölümünü temizle")
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            showAll = !(expanded && showAll)
+                            expanded = showAll
+                        },
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.SecondaryEditable),
+                    ) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = "ATA bölümü listesi")
+                    }
                 }
             },
         )
-        DropdownMenu(
-            expanded = expanded,
+        ExposedDropdownMenu(
+            expanded = expanded && suggestions.isNotEmpty(),
             onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 320.dp),
+            modifier = Modifier.heightIn(max = 280.dp),
         ) {
-            ATA_CHAPTERS.forEach { chapter ->
+            suggestions.forEach { chapter ->
                 DropdownMenuItem(
                     text = { Text(chapter) },
                     onClick = {
                         onChange(chapter)
                         expanded = false
+                        showAll = false
                     },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                 )
             }
         }

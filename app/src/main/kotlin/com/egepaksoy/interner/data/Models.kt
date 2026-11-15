@@ -114,3 +114,34 @@ val ATA_CHAPTERS = listOf(
     "79 - Yağ",
     "80 - Starter",
 )
+
+/** Türkçe harfleri sadeleştirir: "İniş" → "inis". Klavyede Türkçe karakter kullanmadan da arama yapılabilsin. */
+private fun fold(text: String): String = text.lowercase(TR).map {
+    when (it) {
+        'ı' -> 'i'; 'ş' -> 's'; 'ğ' -> 'g'; 'ü' -> 'u'; 'ö' -> 'o'; 'ç' -> 'c'
+        else -> it
+    }
+}.joinToString("").replace(Regex("\\s+"), " ").trim()
+
+/**
+ * Yazılan metne uyan ATA bölümleri, en iyi eşleşme önce:
+ * numarası yazılanla başlayanlar, sonra adı yazılanla başlayanlar, sonra adında bir kelimesi
+ * yazılanla başlayanlar, en son adında yazılan geçenler. Boş metinde tüm liste döner.
+ */
+fun searchAtaChapters(query: String): List<String> {
+    val q = fold(query)
+    if (q.isEmpty()) return ATA_CHAPTERS
+    return ATA_CHAPTERS.mapNotNull { chapter ->
+        val number = chapter.substringBefore(" -")
+        val name = fold(chapter.substringAfter("- "))
+        val full = fold(chapter)
+        val rank = when {
+            number.startsWith(q) || full.startsWith(q) -> 0
+            name.startsWith(q) -> 1
+            name.split(' ', '/').any { it.startsWith(q) } -> 2
+            name.contains(q) -> 3
+            else -> return@mapNotNull null
+        }
+        rank to chapter
+    }.sortedBy { it.first }.map { it.second }
+}

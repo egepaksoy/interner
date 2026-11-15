@@ -72,6 +72,25 @@ class AppFlowTest {
     }
 
     @Test
+    fun typingInAtaFieldSuggestsMatchingChapters() {
+        waitForText("Henüz kayıt yok")
+        rule.onNodeWithText("Gün ekle", useUnmergedTree = true).performClick()
+        rule.onNodeWithText("Başlık").performTextInput("Yakıt filtresi değişimi")
+        rule.onNodeWithText("ATA bölümü").performScrollTo().performTextInput("yakit")
+        waitForText("28 - Yakıt")
+        rule.onNodeWithText("73 - Motor Yakıt ve Kontrol").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("32 - İniş Takımları").fetchSemanticsNodes().size)
+        shot("8-ata-arama")
+        rule.onNodeWithText("73 - Motor Yakıt ve Kontrol").performClick()
+        // Seçilince öneriler kapanır, alanda seçilen bölüm kalır.
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("28 - Yakıt").fetchSemanticsNodes().isEmpty() }
+        rule.onNodeWithText("73 - Motor Yakıt ve Kontrol").assertIsDisplayed()
+        rule.onNodeWithText("Kaydet").performClick()
+        rule.waitUntil(5_000) { runBlocking { dao.allEntries() }.isNotEmpty() }
+        assertEquals("73 - Motor Yakıt ve Kontrol", runBlocking { dao.allEntries() }.single().ata)
+    }
+
+    @Test
     fun oldLowercaseAircraftDoesNotShowAsExtraChoice() {
         waitForText("Henüz kayıt yok")
         runBlocking { dao.insertEntries(listOf(LogEntry(date = LocalDate.now().toEpochDay() - 1, title = "Eski kayıt", aircraft = "a320"))) }
